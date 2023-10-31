@@ -2,7 +2,7 @@ name: Build and Publish Go Binary
 on:
   push:
     branches:
-    - 'release'
+    - 'release/*'
 jobs:
   build:
     runs-on: ubuntu-latest
