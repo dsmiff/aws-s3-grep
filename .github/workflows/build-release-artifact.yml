@@ -1,0 +1,41 @@
+name: Build and Publish Go Binary
+on:
+  push:
+    branches:
+    - 'release'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux, darwin, windows]
+        arch: [amd64, arm64]
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.20'
+
+      - name: Build Go binaries
+        run: |
+          if [ ${{ matrix.os }} == "windows" ]; then
+            CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o aws-s3-grep.exe .
+          else
+            CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o aws-s3-grep .
+          fi
+
+      - name: Extract release version from branch name
+        id: release_version
+        run: echo "::set-output name=version::${GITHUB_REF##*/}"
+
+      - name: Create artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: aws-s3-grep-v${{ steps.release_version.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            ./aws-s3-grep
+            ./aws-s3-grep.exe
